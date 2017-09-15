@@ -19,26 +19,45 @@
 """
 
 import pygame
+import csv
 
-class SolarSystemObject:
-    def __init__(self, name='Unnamed object', hx=0, hy=0, hz=0, mag=0, diameter=0, mass=0, orbit_distance=0, orbit_period=0, lower_temp=0, upper_temp=0):
+_NUMERALS = '0123456789abcdefABCDEF'
+_HEXDEC = {v: int(v, 16) for v in (x+y for x in _NUMERALS for y in _NUMERALS)}
+LOWERCASE, UPPERCASE = 'x', 'X'
+
+def rgb(triplet):
+    return _HEXDEC[triplet[0:2]], _HEXDEC[triplet[2:4]], _HEXDEC[triplet[4:6]]
+
+def triplet(rgb, lettercase=LOWERCASE):
+    return format(rgb[0]<<16 | rgb[1]<<8 | rgb[2], '06'+lettercase)
+
+class MassiveObject:
+    solar_system = {}
+
+    def __init__(self, name='Unnamed object', color=(255,255,255), hx=0, hy=0, mass=0):
         self.name = name
+        self.color = color
         self.hx = float(hx)
         self.hy = float(hy)
-        self.hz = float(hz)
-        #self.pos2 = (float(hx), float(hy))
-        #self.pos3 = (float(hx), float(hy), float(hz))
-        self.diameter = float(diameter)
         self.mass = float(mass)
-        self.orbit_distance = float(orbit_distance)
-        self.orbit_period = float(orbit_period)
-        self.lower_temp = float(lower_temp)
-        self.upper_temp = float(upper_temp)
 
-        self.image = pygame.image.load('images/{}.png'.format(str.lower(self.name)))
+    def get_x(self):
+        return int(self.hx)
+    def get_y(self):
+        return int(self.hy)
+    def get_position(self):
+        return (int(self.hx), int(self.hy))
+    def get_screen_position(self, scale):
+        return (int(self.hx * 10**scale), int(self.hy * 10**scale))
 
-    def display(self, game_display):
-        game_display.blit(self.image, (self.hx*100+500, self.hy*100+500))
+    def display(self, screen, scale):
+        # w, h = screen.get_size()
+        pygame.draw.circle(screen, self.color, self.get_screen_position(scale), 10)
+
+with open('solar_system_details_trimmed.csv') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        MassiveObject.solar_system[row['name']] = MassiveObject(name=row['name'], color=triplet(row['color']), hx=row['hx'], hy=row['hy'], mass=row['mass'])
 
 
 
