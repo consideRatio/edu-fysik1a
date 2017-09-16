@@ -18,46 +18,67 @@
         astronomical unit: 149597870700 m
 """
 
+import sys
 import pygame
 import csv
+import struct
+import math
 
-_NUMERALS = '0123456789abcdefABCDEF'
-_HEXDEC = {v: int(v, 16) for v in (x+y for x in _NUMERALS for y in _NUMERALS)}
-LOWERCASE, UPPERCASE = 'x', 'X'
-
-def rgb(triplet):
-    return _HEXDEC[triplet[0:2]], _HEXDEC[triplet[2:4]], _HEXDEC[triplet[4:6]]
-
-def triplet(rgb, lettercase=LOWERCASE):
-    return format(rgb[0]<<16 | rgb[1]<<8 | rgb[2], '06'+lettercase)
+def get_velocities(x, y, T):
+    return -y / T, x / T
 
 class MassiveObject:
     solar_system = {}
 
-    def __init__(self, name='Unnamed object', color=(255,255,255), hx=0, hy=0, mass=0):
+
+    def __init__(self, name='Unnamed object', color=(255,255,255), x=0, y=0, mass=1.99e30, diameter=1, orbit_period=0):
         self.name = name
         self.color = color
-        self.hx = float(hx)
-        self.hy = float(hy)
+
         self.mass = float(mass)
+        self.diameter = float(diameter)
+        self.orbit_period = float(orbit_period)
+
+        self.set_position(x, y)
+        if (self.orbit_period):
+            self.set_velocity(*get_velocities(float(x), float(y), self.orbit_period))
+            self.set_acceleration(0, 0)
+            self.set_force(0, 0)
+        else:
+            self.set_velocity(0, 0)
+            self.set_acceleration(0, 0)
+            self.set_force(0, 0)
+
+
+
+    def set_position(self, x, y):
+        self.x, self.y = (float(x), float(y))
+    def set_velocity(self, vx, vy):
+        self.vx, self.vy = (float(vx), float(vy))
+    def set_acceleration(self, ax, ay):
+        self.ax, self.ay = (float(ax), float(ay))
+    def set_force(self, Fx, Fy):
+        self.Fx, self.Fy = (float(Fx), float(Fy))
 
     def get_x(self):
-        return int(self.hx)
+        return int(self.x)
     def get_y(self):
-        return int(self.hy)
+        return int(self.y)
     def get_position(self):
-        return (int(self.hx), int(self.hy))
-    def get_screen_position(self, scale):
-        return (int(self.hx * 10**scale), int(self.hy * 10**scale))
+        return (int(self.x), int(self.y))
+    def get_screen_position(self, screen, scale):
+        x = max(0, min(screen.get_width(), int(self.x * (10**scale)) + int(screen.get_width() / 2)))
+        y = max(0, min(screen.get_height(), int(self.y * (10**scale)) + int(screen.get_height() / 2)))
+        return (x, y)
 
     def display(self, screen, scale):
         # w, h = screen.get_size()
-        pygame.draw.circle(screen, self.color, self.get_screen_position(scale), 10)
+        pygame.draw.circle(screen, self.color, self.get_screen_position(screen, scale), 10)
 
 with open('solar_system_details_trimmed.csv') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-        MassiveObject.solar_system[row['name']] = MassiveObject(name=row['name'], color=triplet(row['color']), hx=row['hx'], hy=row['hy'], mass=row['mass'])
+        MassiveObject.solar_system[row['name']] = MassiveObject(name=row['name'], color=struct.unpack('BBB',bytes.fromhex(row['color'])), x=row['hx'], y=row['hy'], mass=row['mass'], diameter=row['diameter'], orbit_period=float(row['orbit_period'])*3600*24)
 
 
 
