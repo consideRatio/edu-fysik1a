@@ -18,67 +18,75 @@
         astronomical unit: 149597870700 m
 """
 
-import sys
 import pygame
 import csv
 import struct
 import math
-
-def get_velocities(x, y, T):
-    return -y / T, x / T
+import numpy as np
 
 class MassiveObject:
     solar_system = {}
 
-
-    def __init__(self, name='Unnamed object', color=(255,255,255), x=0, y=0, mass=1.99e30, diameter=1, orbit_period=0):
+    def __init__(self,
+                 name='Unnamed object',
+                 color=(255,255,255),
+                 r=np.zeros(2),
+                 v=np.zeros(2),
+                 a=np.zeros(2),
+                 F=np.zeros(2),
+                 m=1.99e30,
+                 orbit_period=1.
+                 ):
         self.name = name
         self.color = color
-
-        self.mass = float(mass)
-        self.diameter = float(diameter)
+        self.m = float(m)
         self.orbit_period = float(orbit_period)
 
-        self.set_position(x, y)
-        if (self.orbit_period):
-            self.set_velocity(*get_velocities(float(x), float(y), self.orbit_period))
-            self.set_acceleration(0, 0)
-            self.set_force(0, 0)
-        else:
-            self.set_velocity(0, 0)
-            self.set_acceleration(0, 0)
-            self.set_force(0, 0)
+        (self.r, self.new_r) = (r, np.zeros(2))
+        (self.v, self.new_v) = (v, np.zeros(2))
+        (self.a, self.new_a) = (a, np.zeros(2))
+        (self.F, self.new_F) = (F, np.zeros(2))
+        #self.F_components, self.new_F_components = (np.array([]), np.array([]))
 
+        if (self.orbit_period > 0):
+            anti_clockwise_rotation = np.array([[0, -1], [1, 0]])
+            self.v = 2 * math.pi * np.dot(anti_clockwise_rotation, r) / self.orbit_period
 
+    def flush(self):
+        (self.r, self.new_r) = (self.new_r, np.zeros(2))
+        (self.v, self.new_v) = (self.new_v, np.zeros(2))
+        (self.a, self.new_a) = (self.new_a, np.zeros(2))
+        (self.F, self.new_F) = (self.new_F, np.zeros(2))
 
-    def set_position(self, x, y):
-        self.x, self.y = (float(x), float(y))
-    def set_velocity(self, vx, vy):
-        self.vx, self.vy = (float(vx), float(vy))
-    def set_acceleration(self, ax, ay):
-        self.ax, self.ay = (float(ax), float(ay))
-    def set_force(self, Fx, Fy):
-        self.Fx, self.Fy = (float(Fx), float(Fy))
-
-    def get_x(self):
-        return int(self.x)
-    def get_y(self):
-        return int(self.y)
-    def get_position(self):
-        return (int(self.x), int(self.y))
     def get_screen_position(self, screen, scale):
-        x = max(0, min(screen.get_width(), int(self.x * (10**scale)) + int(screen.get_width() / 2)))
-        y = max(0, min(screen.get_height(), int(self.y * (10**scale)) + int(screen.get_height() / 2)))
-        return (x, y)
+        offset = np.array([screen.get_width() / 2, screen.get_height() / 2], int)
+        bounds = np.array([screen.get_width(), screen.get_height()], int)
+        pos = np.maximum(-bounds*2, np.minimum(bounds*2, self.r * 10 ** scale + offset)).astype(int)
+        return tuple(pos)
 
-    def display(self, screen, scale):
+    def get_screen_vector_position(self, screen, scale, time_scale, dr):
+        offset = np.array([screen.get_width() / 2, screen.get_height() / 2], int)
+        bounds = np.array([screen.get_width(), screen.get_height()], int)
+        pos = np.maximum(-bounds*2, np.minimum(bounds*2, (self.r + dr * time_scale)* 10 ** scale + offset)).astype(int)
+        return tuple(pos)
+
+    def display(self, screen, scale, time_scale):
         # w, h = screen.get_size()
-        pygame.draw.circle(screen, self.color, self.get_screen_position(screen, scale), 10)
+        pos = self.get_screen_position(screen, scale)
+        pygame.draw.circle(screen, self.color, pos, 10)
+        end_pos_v = self.get_screen_vector_position(screen, scale, time_scale ** 1 * 3, self.v)
+        end_pos_a = self.get_screen_vector_position(screen, scale, time_scale ** 2 * 3, self.a)
+        pygame.draw.line(screen, self.color, pos, end_pos_v, 3)
+        pygame.draw.line(screen, self.color, pos, end_pos_a, 3)
 
 with open('solar_system_details_trimmed.csv') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-        MassiveObject.solar_system[row['name']] = MassiveObject(name=row['name'], color=struct.unpack('BBB',bytes.fromhex(row['color'])), x=row['hx'], y=row['hy'], mass=row['mass'], diameter=row['diameter'], orbit_period=float(row['orbit_period'])*3600*24)
-
-
+        MassiveObject.solar_system[row['name']] = MassiveObject(
+            name=row['name'],
+            color=struct.unpack('BBB',bytes.fromhex(row['color'])),
+            r=np.array([float(row['hx']), float(row['hy'])]),
+            m=float(row['mass']),
+            orbit_period=float(row['orbit_period'])*3600*24
+        )
 

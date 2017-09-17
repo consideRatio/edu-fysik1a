@@ -1,16 +1,18 @@
 import pygame
 import math
+import numpy
 
 from massive_object import MassiveObject
 from easing import ease_out_quad
 
 # Constants
 WINDOW_TITLE = 'Solar System - A simulation'
-FPS = 60
+FPS = 120
 DISPLAY_WIDTH = 1280
 DISPLAY_HEIGHT = 720
 SCALE_EASING_DURATION = 500
 G = 6.67408e-11
+TIME_SCALE = 3600 * 24 * 7  # One week per second
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -41,6 +43,7 @@ def game_loop():
     game_exit = False
     while not game_exit:
         frame_time = clock.tick(FPS)
+        simulation_time = frame_time / 1000 * TIME_SCALE
 
         # Conclude changes from events since since last frame...
         for event in pygame.event.get():
@@ -77,25 +80,35 @@ def game_loop():
             scale_easing_time += frame_time
             scale_current = ease_out_quad(scale_easing_time, scale_easing_from, scale_easing_to - scale_easing_from, SCALE_EASING_DURATION)
 
+        # STEP:
+        # - update x' based on v
+        # - update v' based on a
+        # - update a' based on F
+        # - update F' based on x
+        # - flush -' to -
+
         for o1 in solar_system:
             for o2 in solar_system:
                 if o1 == o2:
                     continue
 
-                dx, dy = (o1.x - o2.x), (o1.y - o2.y)
-                r_abs = math.sqrt(dx ** 2 + dy ** 2)
-                r_hat_x, r_hat_y = dx / r_abs, dy / r_abs
-                F_abs = G * o1.mass * o2.mass / r_abs ** 2
-                o2.Fx, o2.Fy = o2.Fx + r_hat_x * F_abs, o2.Fy + r_hat_y * F_abs
+                dr = o2.r - o1.r
+                dr_norm = numpy.linalg.norm(dr)
+                dr_hat = dr / dr_norm
+                F_abs = G * o1.m * o2.m / dr_norm ** 2
+                o1.new_F += dr_hat * F_abs
 
         for o1 in solar_system:
+            o1.new_r = o1.r + o1.v * simulation_time
+            o1.new_v = o1.v + o1.a * simulation_time
+            o1.new_a = o1.F / o1.m
 
-            o1.ax = o1.Fx / o1.mass
-            o1.ay = o1.Fy / o1.mass
-            o1.vx += o1.ax * 3600 * 24 * 31 / FPS
-            o1.vy += o1.ay * 3600 * 24 * 31 / FPS
-            o1.x += o1.vx * 3600 * 24 * 31 / FPS
-            o1.y += o1.vy * 3600 * 24 * 31 / FPS
+            o1.flush()
+
+
+
+
+
 
 
 
@@ -104,9 +117,7 @@ def game_loop():
         # Render screen...
         screen.fill(BLACK)
         for o in solar_system:
-            if o.name == "Earth":
-                print(o.vx)
-            o.display(screen, scale=scale_current)
+            o.display(screen, scale=scale_current, time_scale=TIME_SCALE)
 
         pygame.display.update()
 
