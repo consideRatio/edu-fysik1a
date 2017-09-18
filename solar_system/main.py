@@ -1,6 +1,5 @@
 import pygame
-import math
-import numpy
+import numpy as np
 
 from massive_object import MassiveObject
 from easing import ease_out_quad
@@ -29,6 +28,12 @@ def game_loop():
     scale_easing_from, scale_easing_to, scale_easing_to_change = (scale_current, scale_current, 0)
     scale_easing_time = SCALE_EASING_DURATION
 
+    #offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float) / 10 ** scale_current
+    offset = np.array([0,0], float)
+
+    recent_mouse_pos, new_mouse_pos = [0,0], [0,0]
+
+
     solar_system = [
         MassiveObject.solar_system["Earth"],
         MassiveObject.solar_system["The sun"],
@@ -49,7 +54,7 @@ def game_loop():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_exit = True
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     x_change -= 0.5
                 elif event.key == pygame.K_RIGHT:
@@ -58,11 +63,21 @@ def game_loop():
                     y_change -= 0.5
                 elif event.key == pygame.K_DOWN:
                     y_change += 0.5
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 4:
+                elif event.key == pygame.K_SPACE:
+                    offset = np.array([0, 0], float)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    recent_mouse_pos = np.array(pygame.mouse.get_pos(), dtype=int)
+                elif event.button == 4:
                     scale_easing_to_change += 0.5
                 elif event.button == 5:
                     scale_easing_to_change -= 0.5
+            elif event.type == pygame.MOUSEMOTION:
+                if pygame.mouse.get_pressed()[0]:
+                    new_mouse_pos = np.array(pygame.mouse.get_pos(), dtype=int)
+                    offset += (new_mouse_pos - recent_mouse_pos) / 10 ** scale_current
+                    print(offset)
+                    recent_mouse_pos = new_mouse_pos
 
         # Process changes...
         x += x_change
@@ -93,7 +108,7 @@ def game_loop():
                     continue
 
                 dr = o2.r - o1.r
-                dr_norm = numpy.linalg.norm(dr)
+                dr_norm = np.linalg.norm(dr)
                 dr_hat = dr / dr_norm
                 F_abs = G * o1.m * o2.m / dr_norm ** 2
                 o1.new_F += dr_hat * F_abs
@@ -117,7 +132,7 @@ def game_loop():
         # Render screen...
         screen.fill(BLACK)
         for o in solar_system:
-            o.display(screen, scale=scale_current, time_scale=TIME_SCALE)
+            o.display(screen, scale=scale_current, offset=offset, time_scale=TIME_SCALE)
 
         pygame.display.update()
 

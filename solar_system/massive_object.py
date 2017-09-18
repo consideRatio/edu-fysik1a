@@ -58,24 +58,24 @@ class MassiveObject:
         (self.a, self.new_a) = (self.new_a, np.zeros(2))
         (self.F, self.new_F) = (self.new_F, np.zeros(2))
 
-    def get_screen_position(self, screen, scale):
-        offset = np.array([screen.get_width() / 2, screen.get_height() / 2], int)
-        bounds = np.array([screen.get_width(), screen.get_height()], int)
-        pos = np.maximum(-bounds*2, np.minimum(bounds*2, self.r * 10 ** scale + offset)).astype(int)
+    def get_screen_position(self, screen, scale, offset):
+        screen_offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float)
+        bounds = np.array([screen.get_width(), screen.get_height()])
+        pos = np.maximum(-bounds*2, np.minimum(bounds*2, (self.r + offset) * 10 ** scale + screen_offset)).astype(int)
         return tuple(pos)
 
-    def get_screen_vector_position(self, screen, scale, time_scale, dr):
-        offset = np.array([screen.get_width() / 2, screen.get_height() / 2], int)
-        bounds = np.array([screen.get_width(), screen.get_height()], int)
-        pos = np.maximum(-bounds*2, np.minimum(bounds*2, (self.r + dr * time_scale)* 10 ** scale + offset)).astype(int)
+    def get_screen_vector_position(self, screen, scale, offset, time_scale, dr):
+        screen_offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float)
+        bounds = np.array([screen.get_width(), screen.get_height()])
+        pos = np.maximum(-bounds*2, np.minimum(bounds*2, ((self.r + offset) + dr * time_scale)* 10 ** scale + screen_offset)).astype(int)
         return tuple(pos)
 
-    def display(self, screen, scale, time_scale):
+    def display(self, screen, scale, offset, time_scale):
         # w, h = screen.get_size()
-        pos = self.get_screen_position(screen, scale)
+        pos = self.get_screen_position(screen, scale, offset)
         pygame.draw.circle(screen, self.color, pos, 10)
-        end_pos_v = self.get_screen_vector_position(screen, scale, time_scale ** 1 * 3, self.v)
-        end_pos_a = self.get_screen_vector_position(screen, scale, time_scale ** 2 * 3, self.a)
+        end_pos_v = self.get_screen_vector_position(screen, scale, offset, time_scale ** 1 * 3, self.v)
+        end_pos_a = self.get_screen_vector_position(screen, scale, offset, time_scale ** 2 * 3, self.a)
         pygame.draw.line(screen, self.color, pos, end_pos_v, 3)
         pygame.draw.line(screen, self.color, pos, end_pos_a, 3)
 
