@@ -1,20 +1,24 @@
 import pygame
 import numpy as np
+import math
 
 from massive_object import MassiveObject
-from easing import ease_out_quad
+from easing import ease_out_quad, linear_tween
 
 # Constants
 WINDOW_TITLE = 'Solar System - A simulation'
-FPS = 120
+FPS = 144
 DISPLAY_WIDTH = 1280
 DISPLAY_HEIGHT = 720
-SCALE_EASING_DURATION = 500
+DISPLAY_SIZE = np.array([DISPLAY_WIDTH, DISPLAY_HEIGHT], int)
+SCALE_EASING_DURATION = 400
 G = 6.67408e-11
 TIME_SCALE = 3600 * 24 * 7  # One week per second
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+
+SCALE_DOUBLING = 2
 
 # Setup
 pygame.init()
@@ -24,25 +28,22 @@ clock = pygame.time.Clock()
 
 def game_loop():
     x, y, x_change, y_change = (0, 0, 0, 0)
-    scale_current = -9
-    scale_easing_from, scale_easing_to, scale_easing_to_change = (scale_current, scale_current, 0)
+    scale_current = 10 ** -9
+    scale_easing_from, scale_easing_to, scale_easing_to_change = (scale_current, scale_current, 1)
     scale_easing_time = SCALE_EASING_DURATION
 
-    #offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float) / 10 ** scale_current
-    offset = np.array([0,0], float)
-
+    offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float) / scale_current
     recent_mouse_pos, new_mouse_pos = [0,0], [0,0]
 
-
     solar_system = [
-        MassiveObject.solar_system["Earth"],
         MassiveObject.solar_system["The sun"],
         MassiveObject.solar_system["Venus"],
+        MassiveObject.solar_system["Earth"],
         MassiveObject.solar_system["Mars"],
         MassiveObject.solar_system["Jupiter"],
         MassiveObject.solar_system["Saturn"],
         MassiveObject.solar_system["Uranus"],
-        MassiveObject.solar_system["Neptune"]
+        MassiveObject.solar_system["Neptune"],
     ]
 
     game_exit = False
@@ -64,19 +65,18 @@ def game_loop():
                 elif event.key == pygame.K_DOWN:
                     y_change += 0.5
                 elif event.key == pygame.K_SPACE:
-                    offset = np.array([0, 0], float)
+                    offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float) / scale_current
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     recent_mouse_pos = np.array(pygame.mouse.get_pos(), dtype=int)
                 elif event.button == 4:
-                    scale_easing_to_change += 0.5
+                    scale_easing_to_change *= SCALE_DOUBLING
                 elif event.button == 5:
-                    scale_easing_to_change -= 0.5
+                    scale_easing_to_change /= SCALE_DOUBLING
             elif event.type == pygame.MOUSEMOTION:
                 if pygame.mouse.get_pressed()[0]:
                     new_mouse_pos = np.array(pygame.mouse.get_pos(), dtype=int)
-                    offset += (new_mouse_pos - recent_mouse_pos) / 10 ** scale_current
-                    print(offset)
+                    offset += (new_mouse_pos - recent_mouse_pos) / scale_current
                     recent_mouse_pos = new_mouse_pos
 
         # Process changes...
@@ -85,15 +85,18 @@ def game_loop():
         y += y_change
         y_change = 0
 
-        if (scale_easing_to_change != 0):
+        if (scale_easing_to_change != 1):
             scale_easing_from = scale_current
-            scale_easing_to += scale_easing_to_change
-            scale_easing_to_change = 0
+            scale_easing_to *= scale_easing_to_change
+            scale_easing_to_change = 1
             scale_easing_time = 0
 
         if (scale_easing_time < SCALE_EASING_DURATION):
-            scale_easing_time += frame_time
+            scale_old = scale_current
+            scale_easing_time = min(scale_easing_time + frame_time, SCALE_EASING_DURATION)
             scale_current = ease_out_quad(scale_easing_time, scale_easing_from, scale_easing_to - scale_easing_from, SCALE_EASING_DURATION)
+            mouse_pos = np.array(pygame.mouse.get_pos(), dtype=int)
+            offset -= mouse_pos * (1/scale_old - 1/scale_current)
 
         # STEP:
         # - update x' based on v

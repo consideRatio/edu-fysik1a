@@ -59,15 +59,15 @@ class MassiveObject:
         (self.F, self.new_F) = (self.new_F, np.zeros(2))
 
     def get_screen_position(self, screen, scale, offset):
-        screen_offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float)
+        #screen_offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float)
         bounds = np.array([screen.get_width(), screen.get_height()])
-        pos = np.maximum(-bounds*2, np.minimum(bounds*2, (self.r + offset) * 10 ** scale + screen_offset)).astype(int)
+        pos = np.maximum(-bounds*2, np.minimum(bounds*2, (self.r + offset) * scale)).astype(int)
         return tuple(pos)
 
     def get_screen_vector_position(self, screen, scale, offset, time_scale, dr):
-        screen_offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float)
+        #screen_offset = np.array([screen.get_width() / 2, screen.get_height() / 2], float)
         bounds = np.array([screen.get_width(), screen.get_height()])
-        pos = np.maximum(-bounds*2, np.minimum(bounds*2, ((self.r + offset) + dr * time_scale)* 10 ** scale + screen_offset)).astype(int)
+        pos = np.maximum(-bounds*2, np.minimum(bounds*2, ((self.r + offset) + dr * time_scale)* scale)).astype(int)
         return tuple(pos)
 
     def display(self, screen, scale, offset, time_scale):
