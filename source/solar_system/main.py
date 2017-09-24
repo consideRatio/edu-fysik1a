@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 from massive_object import MassiveObject
-from easing import ease_out_quad, linear_tween
+from easing import ease_out_quad
 
 # Constants
 WINDOW_TITLE = 'Solar System - A simulation'
@@ -122,15 +122,6 @@ def game_loop():
             o1.new_a = o1.F / o1.m
 
             o1.flush()
-
-
-
-
-
-
-
-
-
 
         # Render screen...
         screen.fill(BLACK)

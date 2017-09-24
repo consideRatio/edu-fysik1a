@@ -8,5 +8,3 @@ def ease_out_quad(t, b, c, d):
     """
     t /= d
     return -c * t*(t-2) + b
-
-linear_tween = lambda t, b, c, d : c*t/d + b

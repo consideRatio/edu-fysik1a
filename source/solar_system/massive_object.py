@@ -79,7 +79,7 @@ class MassiveObject:
         pygame.draw.line(screen, self.color, pos, end_pos_v, 3)
         pygame.draw.line(screen, self.color, pos, end_pos_a, 3)
 
-with open('solar_system_details_trimmed.csv') as csvfile:
+with open('solar_system_details.csv') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
         MassiveObject.solar_system[row['name']] = MassiveObject(

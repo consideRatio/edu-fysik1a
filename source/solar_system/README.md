@@ -23,7 +23,6 @@ class SSSim:
 
 ## Allt möjligt...
 - Jupyterfiler bör ej uppdateras när jag committar, men det är okej att uppdatera filer jupyterfilen hänvisar till.
-- 
 
 ## Kodtester
 - Ett kodtest ska finnas för varje kodkomplettering.
