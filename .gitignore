@@ -73,6 +73,11 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# NbGrader
+gradebook.db
+nbgrader_config.py
+#source/
+
 # pyenv
 .python-version
 
@@ -205,6 +210,3 @@ fabric.properties
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-gradebook.db
-nbgrader_config.py
-release/
